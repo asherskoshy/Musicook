@@ -73,7 +73,7 @@ const Navbar: React.FC = () => {
 
           {/* Desktop Auth */}
           <div className="hidden md:flex items-center space-x-4">
-        {isLoggedIn ? (
+            {isLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
