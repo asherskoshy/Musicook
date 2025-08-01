@@ -13,7 +13,7 @@ import {
 import { Menu, X, Music, User, Settings, LogOut, Home, Mic, Info, HelpCircle, Mail } from 'lucide-react';
 
 const Navbar: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isLoggedIn, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -35,7 +35,7 @@ const Navbar: React.FC = () => {
     { name: 'Generate', href: '/generate', icon: Mic },
   ];
 
-  const navItems = isAuthenticated ? authenticatedNavItems : publicNavItems;
+  const navItems = isLoggedIn ? authenticatedNavItems : publicNavItems;
 
   const isActivePath = (path: string) => location.pathname === path;
 
@@ -73,7 +73,7 @@ const Navbar: React.FC = () => {
 
           {/* Desktop Auth */}
           <div className="hidden md:flex items-center space-x-4">
-            {isAuthenticated ? (
+        {isLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
@@ -156,7 +156,7 @@ const Navbar: React.FC = () => {
                 </Link>
               ))}
               
-              {isAuthenticated ? (
+              {isLoggedIn ? (
                 <>
                   <div className="border-t border-border pt-2 mt-2">
                     <Link

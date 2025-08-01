@@ -12,14 +12,15 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/dashboard';
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
@@ -31,20 +32,27 @@ const Login: React.FC = () => {
       return;
     }
 
-    const success = await login(email, password);
-    if (success) {
-      toast({
-        title: "Welcome back!",
-        description: "You have been successfully logged in.",
-      });
-      navigate(from, { replace: true });
-    } else {
-      toast({
-        title: "Error",
-        description: "Invalid email or password",
-        variant: "destructive",
-      });
-    }
+    setIsLoading(true);
+    
+    // Simple delay to show loading state
+    setTimeout(() => {
+      const success = login(email, password);
+      setIsLoading(false);
+      
+      if (success) {
+        toast({
+          title: "Welcome back!",
+          description: "You have been successfully logged in.",
+        });
+        navigate(from, { replace: true });
+      } else {
+        toast({
+          title: "Error",
+          description: "Invalid email or password",
+          variant: "destructive",
+        });
+      }
+    }, 1000);
   };
 
   return (

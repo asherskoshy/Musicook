@@ -17,7 +17,8 @@ const Signup: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { signup, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { signup } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -35,7 +36,7 @@ const Signup: React.FC = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -56,20 +57,27 @@ const Signup: React.FC = () => {
       return;
     }
 
-    const success = await signup(formData.name, formData.email, formData.password);
-    if (success) {
-      toast({
-        title: "Welcome to Musicook!",
-        description: "Your account has been created successfully.",
-      });
-      navigate('/dashboard');
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to create account. Please try again.",
-        variant: "destructive",
-      });
-    }
+    setIsLoading(true);
+    
+    // Simple delay to show loading state
+    setTimeout(() => {
+      const success = signup(formData.name, formData.email, formData.password);
+      setIsLoading(false);
+      
+      if (success) {
+        toast({
+          title: "Welcome to Musicook!",
+          description: "Your account has been created successfully.",
+        });
+        navigate('/dashboard');
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create account. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }, 1000);
   };
 
   return (
