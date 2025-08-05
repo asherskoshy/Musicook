@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,26 +9,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Music, Eye, EyeOff, Check, X } from 'lucide-react';
 
+interface SignupFormData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
 const Signup: React.FC = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [errors, setErrors] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
   const { signup, loginWithGoogle } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    setError,
+    clearErrors
+  } = useForm<SignupFormData>({
+    mode: 'onChange'
+  });
+
+  const watchedPassword = watch('password');
 
   const passwordRequirements = [
     { regex: /.{6,}/, text: 'At least 6 characters' },
@@ -36,100 +45,11 @@ const Signup: React.FC = () => {
     { regex: /[0-9]/, text: 'One number' },
   ];
 
-  // Email validation
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  // Real-time validation
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-
-    // Clear error when user starts typing
-    setErrors(prev => ({
-      ...prev,
-      [name]: ''
-    }));
-
-    // Real-time validation
-    if (name === 'email' && value) {
-      if (!validateEmail(value)) {
-        setErrors(prev => ({
-          ...prev,
-          email: 'Please enter a valid email address'
-        }));
-      }
-    }
-
-    if (name === 'password' && value) {
-      if (value.length < 6) {
-        setErrors(prev => ({
-          ...prev,
-          password: 'Password must be at least 6 characters'
-        }));
-      }
-    }
-
-    if (name === 'confirmPassword' && value) {
-      if (value !== formData.password) {
-        setErrors(prev => ({
-          ...prev,
-          confirmPassword: 'Passwords do not match'
-        }));
-      }
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors = {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: ''
-    };
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.confirmPassword !== formData.password) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    setErrors(newErrors);
-    return !Object.values(newErrors).some(error => error !== '');
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
+  const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
     
     try {
-      const result = await signup(formData.name, formData.email, formData.password);
+      const result = await signup(data.name, data.email, data.password);
       
       if (result.success) {
         toast({
@@ -206,20 +126,20 @@ const Signup: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
                   id="name"
-                  name="name"
                   type="text"
                   placeholder="Enter your full name"
-                  value={formData.name}
-                  onChange={handleInputChange}
                   className={`bg-muted/50 ${errors.name ? 'border-red-500' : ''}`}
+                  {...register('name', {
+                    required: "Name is required"
+                  })}
                 />
                 {errors.name && (
-                  <p className="text-sm text-red-500">{errors.name}</p>
+                  <p className="text-sm text-red-500">{errors.name.message}</p>
                 )}
               </div>
 
@@ -227,15 +147,49 @@ const Signup: React.FC = () => {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
-                  name="email"
                   type="email"
                   placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={handleInputChange}
                   className={`bg-muted/50 ${errors.email ? 'border-red-500' : ''}`}
+                  {...register('email', {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Please enter a valid email address"
+                    },
+                    validate: {
+                      notSimplePattern: (value) => {
+                        const simplePatterns = [
+                          /^\d+@\d+\.\w+$/, // 1@1.com, etc.
+                          /^[a-z]@[a-z]\.\w+$/i, // a@a.com, etc.
+                          /^test@test\.\w+$/i,
+                          /^admin@admin\.\w+$/i,
+                          /^user@user\.\w+$/i,
+                          /^demo@demo\.\w+$/i,
+                          /^example@example\.\w+$/i,
+                        ];
+                        for (const pattern of simplePatterns) {
+                          if (pattern.test(value)) {
+                            return "Please enter a real email address, not a test pattern";
+                          }
+                        }
+
+                        const localPart = value.split('@')[0];
+                        if (localPart && localPart.length < 2) {
+                          return "Email local part must be at least 2 characters";
+                        }
+
+                        const domainPart = value.split('@')[1]?.split('.')[0];
+                        if (domainPart && domainPart.length < 2) {
+                          return "Email domain must be at least 2 characters";
+                        }
+
+                        return true;
+                      }
+                    }
+                  })}
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email}</p>
+                  <p className="text-sm text-red-500">{errors.email.message}</p>
                 )}
               </div>
               
@@ -244,12 +198,16 @@ const Signup: React.FC = () => {
                 <div className="relative">
                   <Input
                     id="password"
-                    name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a password"
-                    value={formData.password}
-                    onChange={handleInputChange}
                     className={`bg-muted/50 pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                    {...register('password', {
+                      required: "Password is required",
+                      minLength: {
+                        value: 6,
+                        message: "Password must be at least 6 characters"
+                      }
+                    })}
                   />
                   <button
                     type="button"
@@ -260,20 +218,20 @@ const Signup: React.FC = () => {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-sm text-red-500">{errors.password}</p>
+                  <p className="text-sm text-red-500">{errors.password.message}</p>
                 )}
                 
                 {/* Password Requirements */}
-                {formData.password && (
+                {watchedPassword && (
                   <div className="mt-2 space-y-1">
                     {passwordRequirements.map((req, index) => (
                       <div key={index} className="flex items-center space-x-2 text-xs">
-                        {req.regex.test(formData.password) ? (
+                        {req.regex.test(watchedPassword) ? (
                           <Check className="h-3 w-3 text-green-500" />
                         ) : (
                           <X className="h-3 w-3 text-red-500" />
                         )}
-                        <span className={req.regex.test(formData.password) ? 'text-green-500' : 'text-muted-foreground'}>
+                        <span className={req.regex.test(watchedPassword) ? 'text-green-500' : 'text-muted-foreground'}>
                           {req.text}
                         </span>
                       </div>
@@ -287,12 +245,18 @@ const Signup: React.FC = () => {
                 <div className="relative">
                   <Input
                     id="confirmPassword"
-                    name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
                     className={`bg-muted/50 pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                    {...register('confirmPassword', {
+                      required: "Please confirm your password",
+                      validate: (value) => {
+                        if (value !== watchedPassword) {
+                          return "Passwords do not match";
+                        }
+                        return true;
+                      }
+                    })}
                   />
                   <button
                     type="button"
@@ -303,7 +267,7 @@ const Signup: React.FC = () => {
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <p className="text-sm text-red-500">{errors.confirmPassword}</p>
+                  <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
                 )}
               </div>
 
