@@ -9,6 +9,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import EmailVerification from "./pages/EmailVerification";
 import Dashboard from "./pages/Dashboard";
 import Generate from "./pages/Generate";
 import ProjectDetail from "./pages/ProjectDetail";
@@ -33,6 +35,8 @@ const App = () => (
             <Route path="/" element={<Layout><Landing /></Layout>} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/email-verification" element={<EmailVerification />} />
             <Route path="/about" element={<Layout><About /></Layout>} />
             <Route path="/faq" element={<Layout><FAQ /></Layout>} />
             <Route path="/contact" element={<Layout><Contact /></Layout>} />
