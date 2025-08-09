@@ -8,7 +8,8 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  reload
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 
@@ -32,6 +33,7 @@ type AuthContextType = {
   logout: () => Promise<void>;
   sendVerificationEmail: () => Promise<{ success: boolean; error?: string }>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  reloadUser: () => Promise<{ success: boolean; error?: string }>;
 };
 
 // Create the context
@@ -91,6 +93,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Send verification email
       await sendEmailVerification(userCredential.user);
+      
+      // Sign out the user after signup so they need to verify email before accessing dashboard
+      await signOut(auth);
       
       return { success: true };
     } catch (error: any) {
@@ -198,6 +203,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Reload user to update emailVerified status
+  const reloadUser = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      if (auth.currentUser) {
+        await reload(auth.currentUser);
+        return { success: true };
+      }
+      return { success: false, error: 'No user is currently signed in' };
+    } catch (error: any) {
+      return { success: false, error: 'Failed to reload user' };
+    }
+  };
+
   // What we provide to the rest of the app
   const value: AuthContextType = {
     user,
@@ -208,7 +226,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loginWithGoogle,
     logout,
     sendVerificationEmail,
-    resetPassword
+    resetPassword,
+    reloadUser
   };
 
   return (

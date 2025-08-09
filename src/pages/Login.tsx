@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -7,23 +7,31 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Music, Eye, EyeOff } from 'lucide-react';
+import Navbar from '@/components/layout/Navbar';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errors, setErrors] = useState({
     email: '',
     password: ''
   });
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, isLoggedIn, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/dashboard';
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!isLoading && isLoggedIn) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isLoggedIn, isLoading, navigate]);
 
   // Email validation
   const validateEmail = (email: string): boolean => {
@@ -99,7 +107,7 @@ const Login: React.FC = () => {
       return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
     
     try {
       const result = await login(email, password);
@@ -124,7 +132,7 @@ const Login: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -159,8 +167,11 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md">
+    <>
+      <Navbar />
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md">
+      
         {/* Logo */}
         <div className="flex items-center justify-center space-x-2 mb-8">
           <div className="gradient-primary p-3 rounded-lg">
@@ -228,9 +239,9 @@ const Login: React.FC = () => {
               <Button 
                 type="submit" 
                 className="w-full gradient-primary"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isSubmitting ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
@@ -281,6 +292,7 @@ const Login: React.FC = () => {
         </Card>
       </div>
     </div>
+    </>
   );
 };
 

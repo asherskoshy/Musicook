@@ -1,10 +1,21 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Music, Mic, Headphones, AudioWaveform, Sparkles, Users, TrendingUp, Star } from 'lucide-react';
 
 const Landing: React.FC = () => {
+  const { isLoggedIn, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!isLoading && isLoggedIn) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isLoggedIn, isLoading, navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}

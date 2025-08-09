@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isLoggedIn, isLoading } = useAuth();
+  const { user, isLoggedIn, isLoading } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while checking authentication status
@@ -25,6 +25,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // If user is not logged in, redirect to login page
   if (!isLoggedIn) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // If user is logged in but email is not verified, redirect to email verification page
+  if (user && !user.emailVerified) {
+    return <Navigate to="/email-verification" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

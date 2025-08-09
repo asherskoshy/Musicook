@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Music, Eye, EyeOff, Check, X } from 'lucide-react';
+import Navbar from '@/components/layout/Navbar';
 
 interface SignupFormData {
   name: string;
@@ -21,9 +22,22 @@ const Signup: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const { signup, loginWithGoogle } = useAuth();
+  const { signup, loginWithGoogle, isLoggedIn, isLoading: authLoading, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Redirect authenticated users to dashboard (only if email is verified)
+  useEffect(() => {
+    if (!authLoading && isLoggedIn) {
+      // Check if user is logged in and email is verified
+      if (user && user.emailVerified) {
+        navigate('/dashboard', { replace: true });
+      } else if (user && !user.emailVerified) {
+        // If user is logged in but email is not verified, redirect to email verification page
+        navigate('/email-verification', { replace: true });
+      }
+    }
+  }, [isLoggedIn, authLoading, navigate, user]);
 
   const {
     register,
@@ -106,8 +120,10 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
-      <div className="w-full max-w-md">
+    <>
+      <Navbar />
+      <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+        <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center space-x-2 mb-8">
           <div className="gradient-primary p-3 rounded-lg">
@@ -327,6 +343,7 @@ const Signup: React.FC = () => {
         </Card>
       </div>
     </div>
+    </>
   );
 };
 

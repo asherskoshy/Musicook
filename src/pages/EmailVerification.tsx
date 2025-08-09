@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,8 +8,25 @@ import { Music, Mail, CheckCircle, RefreshCw } from 'lucide-react';
 
 const EmailVerification: React.FC = () => {
   const [isResending, setIsResending] = useState(false);
-  const { user, sendVerificationEmail } = useAuth();
+  const [isChecking, setIsChecking] = useState(false);
+  const { user, sendVerificationEmail, isLoading, reloadUser } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if user is logged in but email is not verified
+  useEffect(() => {
+    if (!isLoading && (!user || user.emailVerified)) {
+      // If user is not logged in, redirect to login
+      if (!user) {
+        navigate('/login', { replace: true });
+      } else if (user.emailVerified) {
+        // If user is logged in and email is verified, redirect to dashboard or intended page
+        const from = location.state?.from?.pathname || '/dashboard';
+        navigate(from, { replace: true });
+      }
+    }
+  }, [user, isLoading, navigate, location]);
 
   const handleResendVerification = async () => {
     setIsResending(true);
@@ -39,6 +56,53 @@ const EmailVerification: React.FC = () => {
       setIsResending(false);
     }
   };
+
+  const handleCheckVerification = async () => {
+    setIsChecking(true);
+    
+    try {
+      // Reload the user to check if email verification status has changed
+      const result = await reloadUser();
+      
+      if (result.success) {
+        toast({
+          title: "Verification Status Checked",
+          description: "If you've verified your email, you'll be redirected to the dashboard.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to check verification status. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to check verification status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  // Show loading if auth is still loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is not logged in or email is already verified, don't show this page
+  if (!user || user.emailVerified) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -92,6 +156,25 @@ const EmailVerification: React.FC = () => {
                   <>
                     <Mail className="h-4 w-4 mr-2" />
                     Resend Verification Email
+                  </>
+                )}
+              </Button>
+
+              <Button 
+                variant="outline" 
+                onClick={handleCheckVerification}
+                disabled={isChecking}
+                className="w-full"
+              >
+                {isChecking ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Checking...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    I've Verified My Email
                   </>
                 )}
               </Button>
